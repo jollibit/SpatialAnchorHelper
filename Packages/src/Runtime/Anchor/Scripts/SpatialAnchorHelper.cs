@@ -79,10 +79,23 @@ namespace SAH
 
             ClearSpatialAnchors();
 
-            Anchors = await _backend.LoadSpatialAnchors(_roomID, layoutID, _persistentDataLocation);
+            Anchors = await _backend.LoadSpatialAnchors(
+                _roomID,
+                layoutID,
+                _persistentDataLocation);
 
             if (Anchors == null)
+            {
                 Anchors = new List<SAHAnchor>();
+            }
+
+            foreach (SAHAnchor anchor in Anchors)
+            {
+                SAHAnchorTag tag =
+                    anchor.Content.AddComponent<SAHAnchorTag>();
+
+                tag.Initialize(anchor);
+            }
 
             OnLoading?.Invoke();
 
@@ -117,6 +130,12 @@ namespace SAH
 
             anchor.PrefabPath = prefabPath;
             anchor.Type = type;
+
+            SAHAnchorTag tag =
+                anchor.Content.GetComponent<SAHAnchorTag>()
+                ?? anchor.Content.AddComponent<SAHAnchorTag>();
+
+            tag.Initialize(anchor);
 
             Anchors.Add(anchor);
 

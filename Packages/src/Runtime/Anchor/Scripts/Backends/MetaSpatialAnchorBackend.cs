@@ -29,25 +29,33 @@ namespace SAH
             }
         }
 
-        public Task<SAHAnchor> PlaceSpatialAnchor(Vector3 position, Quaternion rotation, Vector3 scale, GameObject prefab)
+        public async Task<SAHAnchor> PlaceSpatialAnchor(
+            Vector3 position,
+            Quaternion rotation,
+            Vector3 scale,
+            GameObject prefab)
         {
-            GameObject parent = GameObject.Find("SpatialAnchors");
-            if (parent == null)
-            {
-                parent = new GameObject("SpatialAnchors");
-            }
+            GameObject instance = UnityEngine.Object.Instantiate(
+                prefab,
+                position,
+                rotation);
 
-            GameObject instance = UnityEngine.Object.Instantiate(prefab, position, rotation, parent.transform);
             instance.transform.localScale = scale;
 
-            OVRSpatialAnchor nativeAnchor = instance.AddComponent<OVRSpatialAnchor>();
+            OVRSpatialAnchor nativeAnchor =
+                instance.AddComponent<OVRSpatialAnchor>();
 
-            return Task.FromResult(new SAHAnchor
+            while (!nativeAnchor.Created)
+            {
+                await Task.Yield();
+            }
+
+            return new SAHAnchor
             {
                 Id = nativeAnchor.Uuid.ToString(),
                 Content = instance,
                 NativeHandle = nativeAnchor
-            });
+            };
         }
 
         public void ClearSpatialAnchors()
