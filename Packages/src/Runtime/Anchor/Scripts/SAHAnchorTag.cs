@@ -12,7 +12,6 @@ namespace SAH
         {
             Anchor = anchor;
             ID = anchor.Id;
-            Debug.Log("TEST: " + anchor.Id + " " + ID);
         }
     }
 }

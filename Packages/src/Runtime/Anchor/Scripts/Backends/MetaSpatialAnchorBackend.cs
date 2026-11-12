@@ -35,10 +35,16 @@ namespace SAH
             Vector3 scale,
             GameObject prefab)
         {
+
+            GameObject parent =
+                GameObject.Find("SpatialAnchors")
+                ?? new GameObject("SpatialAnchors");
+
             GameObject instance = UnityEngine.Object.Instantiate(
                 prefab,
                 position,
-                rotation);
+                rotation,
+                parent.transform);
 
             instance.transform.localScale = scale;
 
