@@ -64,7 +64,7 @@ namespace SAH
             OnRoomIdFound?.Invoke();
         }
 
-        public async void SaveSpatialAnchors(string layoutID)
+        public async Task SaveSpatialAnchors(string layoutID)
         {
             if (_roomID == null) return;
             await _backend.SaveSpatialAnchors(Anchors, _roomID, layoutID, _persistentDataLocation);
@@ -102,7 +102,7 @@ namespace SAH
             return Anchors;
         }
 
-        public async void CreateSpatialAnchor(Vector3 position, Quaternion rotation, Vector3 scale, string prefabPath, string type = null)
+        public async Task CreateSpatialAnchor(Vector3 position, Quaternion rotation, Vector3 scale, string prefabPath, string type = null)
         {
             GameObject prefab = Resources.Load<GameObject>(prefabPath);
 
