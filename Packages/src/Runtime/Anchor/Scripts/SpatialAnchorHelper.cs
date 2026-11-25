@@ -26,6 +26,7 @@ namespace SAH
 
         private ISpatialAnchorBackend _backend;
         private string _roomID;
+        public string RoomId => _roomID;
 
         private void Awake()
         {
