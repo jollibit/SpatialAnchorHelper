@@ -1,11 +1,12 @@
 using System;
-using UnityEngine.XR.ARFoundation;
+using UnityEngine;
 
 namespace SAH
 {
     public enum SpatialAnchorBackendType
     {
         Meta,
+        [InspectorName("OpenXR")]
         ARFoundation
     }
 

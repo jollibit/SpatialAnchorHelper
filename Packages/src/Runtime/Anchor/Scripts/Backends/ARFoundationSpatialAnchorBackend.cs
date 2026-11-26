@@ -14,7 +14,7 @@ namespace SAH
     {
         private const string CacheScopeId = "arfoundation";
 
-        private readonly ARAnchorManager _anchorManager;
+        private ARAnchorManager _anchorManager;
         private readonly List<ARAnchor> _activeAnchors = new List<ARAnchor>();
 
         public IEnumerator FetchRoomIdCoroutine(Action<string> onRoomIdFound)
@@ -43,6 +43,7 @@ namespace SAH
             ARAnchor nativeAnchor = result.value;
             _activeAnchors.Add(nativeAnchor);
             GameObject content = InstantiateContent(prefab, nativeAnchor, null);
+            content.transform.localScale = scale;
 
             return new SAHAnchor
             {
@@ -93,6 +94,9 @@ namespace SAH
                 }
 
                 anchor.Id = result.value.guid.ToString();
+                if (anchor.Content != null && anchor.Content.TryGetComponent(out SAHAnchorTag tag))
+                    tag.Initialize(anchor);
+
                 saveData.Add(new SAHAnchorSaveData
                 {
                     anchorId = anchor.Id,
@@ -229,10 +233,14 @@ namespace SAH
 
         private void EnsureManagerReady()
         {
-            if (!_anchorManager.isActiveAndEnabled || _anchorManager.subsystem == null)
+            if (_anchorManager == null)
+                _anchorManager = UnityEngine.Object.FindFirstObjectByType<ARAnchorManager>();
+
+            if (_anchorManager == null || !_anchorManager.isActiveAndEnabled
+                || _anchorManager.subsystem?.running != true)
             {
                 throw new InvalidOperationException(
-                    "ARAnchorManager must be enabled with an active anchor subsystem.");
+                    "Add an enabled ARAnchorManager to the XR Origin and enable its anchor provider.");
             }
         }
 

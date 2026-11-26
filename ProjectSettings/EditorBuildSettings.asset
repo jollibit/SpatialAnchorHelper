@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Packages/com.fh-kiel.spatial-anchor-helper/Runtime/Anchor/Sample/SampleScene.unity
+    path: Packages/com.fh-kiel.spatial-anchor-helper/Runtime/Anchor/Sample/MetaSample.unity
     guid: 7bd99bec630346746b178c3229787d8a
   m_configObjects:
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 3dff027670e94a6409233d5d43cc749b,

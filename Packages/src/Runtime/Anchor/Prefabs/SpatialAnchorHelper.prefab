@@ -46,4 +46,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _persistentDataLocation: anchors
   _backendType: 0
-  _arAnchorManager: {fileID: 0}
