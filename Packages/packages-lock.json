@@ -9,7 +9,11 @@
         "com.meta.xr.mrutilitykit": "78.0.0",
         "com.meta.xr.sdk.interaction": "78.0.0",
         "com.meta.xr.sdk.interaction.ovr": "78.0.0",
-        "com.unity.xr.arfoundation": "6.4.0"
+        "com.unity.xr.arfoundation": "6.4.0",
+        "com.unity.shadergraph": "17.1.0",
+        "com.unity.xr.hands": "1.7.3",
+        "com.unity.xr.interaction.toolkit": "3.3.2",
+        "com.unity.xr.openxr": "1.16.1"
       }
     },
     "com.meta.xr.mrutilitykit": {
