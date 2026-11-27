@@ -844,7 +844,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.0005, y: 0.0005, z: 0.0005}
   m_ConstrainProportionsScale: 1
-  m_Children: []
+  m_Children:
+  - {fileID: 910000104}
   m_Father: {fileID: 7290700749336897783}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4735,7 +4736,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5332335873772447172}
-  - component: {fileID: 7766627630812415111}
   - component: {fileID: 7198915763917027840}
   m_Layer: 0
   m_Name: MetaMenuShell
@@ -4760,25 +4760,28 @@ Transform:
   - {fileID: 3842040544889865888}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7766627630812415111
-MonoBehaviour:
+--- !u!1001 &910000103
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7149229474777059583}
+    m_Modifications:
+    - target: {fileID: 7553656328152693838, guid: e812aceb73abce94d931ea227b65c898, type: 3}
+      propertyPath: SetupObject
+      value:
+      objectReference: {fileID: 7406647740922620686, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: e812aceb73abce94d931ea227b65c898, type: 3}
+--- !u!224 &910000104 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3250323539927336280, guid: e812aceb73abce94d931ea227b65c898, type: 3}
+  m_PrefabInstance: {fileID: 910000103}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8536860890279034241}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 29d20b69f9b079540846d52d3ebab1b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  stateToPrefabList:
-  - state: START
-    prefab: {fileID: 9010532559974605481, guid: e812aceb73abce94d931ea227b65c898,
-      type: 3}
-  canvas: {fileID: 872786529763945194}
-  setupObjectPrefab: {fileID: 7406647740922620686, guid: c47ebc059410dce48a8ec29d59c98079,
-    type: 3}
 --- !u!114 &7198915763917027840
 MonoBehaviour:
   m_ObjectHideFlags: 0

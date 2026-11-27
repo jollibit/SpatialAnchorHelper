@@ -10,7 +10,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 7406647740922620686, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
       propertyPath: m_Name
-      value: FoundationSetupObject
+      value: ARFoundationSetupObject
       objectReference: {fileID: 0}
     - target: {fileID: 2943723274844843136, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
       propertyPath: m_IsActive
@@ -112,4 +112,4 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da3b18a06c1c4bd7aaf7614c210d0abd, type: 3}
   m_Name:
-  m_EditorClassIdentifier: SAH.XRIGizmos::SAH.FoundationGizmoInput
+  m_EditorClassIdentifier: SAH.XRIGizmos::SAH.XRIGizmoInput

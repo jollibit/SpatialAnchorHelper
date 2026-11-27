@@ -4,7 +4,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 namespace SAH
 {
-    public sealed class FoundationGizmoInput : MonoBehaviour
+    public sealed class XRIGizmoInput : MonoBehaviour
     {
         private GizmoHandle _heldHandle;
 

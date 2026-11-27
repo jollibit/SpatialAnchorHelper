@@ -1946,7 +1946,7 @@ GameObject:
   - component: {fileID: 5269446038740494648}
   - component: {fileID: 7330895541006766085}
   m_Layer: 3
-  m_Name: SetupSheetUIFoundation
+  m_Name: ARFoundationSetupSheetUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

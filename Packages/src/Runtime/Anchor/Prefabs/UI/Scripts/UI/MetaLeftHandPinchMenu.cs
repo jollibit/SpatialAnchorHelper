@@ -1,5 +1,5 @@
 using UnityEngine;
-public class LeftHandPinchMenu : MonoBehaviour
+public class MetaLeftHandPinchMenu : MonoBehaviour
 {
     [Header("References")]
     public OVRHand hand;

@@ -4032,7 +4032,7 @@ GameObject:
   - component: {fileID: 1750170195167819655}
   - component: {fileID: 1831708069431932752}
   m_Layer: 0
-  m_Name: SetupObject
+  m_Name: MetaSetupObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

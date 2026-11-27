@@ -14,7 +14,6 @@ namespace SAH
         [SerializeField] private MonoBehaviour inputProvider;
 
         private ISpatialAnchorPlacementInput _placementInput;
-        private GameObject _setupObjectPrefab;
         private int _placementStartFrame;
 
         private bool _isPlacing = false;
@@ -28,10 +27,6 @@ namespace SAH
             base.Start();
             _placementInput = inputProvider as ISpatialAnchorPlacementInput
                 ?? GetComponentInParent<ISpatialAnchorPlacementInput>();
-            var menu = GetComponentInParent<MainMenuManager>();
-            _setupObjectPrefab = menu != null && menu.SetupObjectPrefab != null
-                ? menu.SetupObjectPrefab
-                : SetupObject;
         }
 
         void OnEnable()
@@ -66,7 +61,7 @@ namespace SAH
 
         public void PlaceAnchor(string prefabPath)
         {
-            if (_placementInput == null || _setupObjectPrefab == null)
+            if (_placementInput == null || SetupObject == null)
             {
                 Debug.LogWarning("The setup sheet requires placement input and a setup object prefab.", this);
                 return;
@@ -130,7 +125,7 @@ namespace SAH
             euler.z = 0;
             Quaternion rotation = Quaternion.Euler(euler);
 
-            GameObject setupGameObject = Instantiate(_setupObjectPrefab, position, rotation);
+            GameObject setupGameObject = Instantiate(SetupObject, position, rotation);
             _pendingSpatialAnchors.Add(setupGameObject);
 
             SetupObject setupObject = setupGameObject.GetComponent<SetupObject>();

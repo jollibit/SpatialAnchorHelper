@@ -37,7 +37,8 @@ namespace SAH
             if (!SupportsPersistence)
                 return null;
 
-            var result = await _anchorManager.TryAddAnchorAsync(pose);
+            ARAnchorManager manager = _anchorManager;
+            var result = await manager.TryAddAnchorAsync(pose);
             if (!result.status.IsSuccess())
                 return null;
 
@@ -49,7 +50,7 @@ namespace SAH
             }
             finally
             {
-                UnityEngine.Object.Destroy(anchor.gameObject);
+                _ = ReleaseSystemAnchor(manager, anchor);
             }
         }
 
@@ -58,7 +59,8 @@ namespace SAH
             if (!SupportsPersistence)
                 return null;
 
-            var result = await _anchorManager.TryLoadAnchorAsync(new SerializableGuid(id), cancellationToken);
+            ARAnchorManager manager = _anchorManager;
+            var result = await manager.TryLoadAnchorAsync(new SerializableGuid(id), cancellationToken);
             if (!result.status.IsSuccess())
                 return null;
 
@@ -68,7 +70,7 @@ namespace SAH
                 HideSystemAnchor(anchor);
                 while (anchor != null && !cancellationToken.IsCancellationRequested)
                 {
-                    if (anchor.trackingState == TrackingState.Tracking)
+                    if (!anchor.pending && anchor.trackingState == TrackingState.Tracking)
                         return new Pose(anchor.transform.position, anchor.transform.rotation);
 
                     await Task.Delay(100, cancellationToken);
@@ -78,8 +80,7 @@ namespace SAH
             }
             finally
             {
-                if (anchor != null)
-                    UnityEngine.Object.Destroy(anchor.gameObject);
+                _ = ReleaseSystemAnchor(manager, anchor);
             }
         }
 
@@ -90,6 +91,24 @@ namespace SAH
 
             var result = await _anchorManager.TryEraseAnchorAsync(new SerializableGuid(id));
             return result.IsSuccess();
+        }
+
+        private static async Task ReleaseSystemAnchor(ARAnchorManager manager, ARAnchor anchor)
+        {
+            while (anchor != null && manager != null && manager.isActiveAndEnabled
+                && manager.subsystem?.running == true)
+            {
+                // The subsystem must report the add before it can report the removal.
+                if (anchor.pending)
+                {
+                    await Awaitable.NextFrameAsync();
+                    continue;
+                }
+
+                if (manager.GetAnchor(anchor.trackableId) == anchor)
+                    manager.TryRemoveAnchor(anchor);
+                return;
+            }
         }
 
         private static void HideSystemAnchor(ARAnchor anchor)

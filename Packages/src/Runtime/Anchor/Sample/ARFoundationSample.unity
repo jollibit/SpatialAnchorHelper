@@ -930,7 +930,7 @@ PrefabInstance:
     - target: {fileID: 8536860890279034241, guid: 191461358ebc4d6fa1afba9f157d57ac,
         type: 3}
       propertyPath: m_Name
-      value: FoundationMenuShell
+      value: ARFoundationMenuShell
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
