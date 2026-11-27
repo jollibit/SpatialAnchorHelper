@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -8,7 +8,11 @@ namespace SAH
 {
     public interface ISpatialAnchorBackend
     {
-        IEnumerator FetchRoomIdCoroutine(Action<string> onRoomIdFound);
+        bool IsTrackingReady { get; }
+        bool SupportsPersistence { get; }
+        Task<Guid?> CreateSystemAnchor(Pose pose);
+        Task<Pose?> LocateSystemAnchor(Guid id, CancellationToken cancellationToken);
+        Task<bool> EraseSystemAnchor(Guid id);
 
         Task<SAHAnchor> PlaceSpatialAnchor(
             Vector3 position,
@@ -18,28 +22,9 @@ namespace SAH
 
         void ClearSpatialAnchors();
 
-        Task SaveSpatialAnchors(
-            List<SAHAnchor> anchors,
-            string roomId,
-            string scenarioId,
-            string subfolder = "anchors");
+        Task<Guid?> SaveSpatialAnchor(SAHAnchor anchor);
 
         Task<List<SAHAnchor>> LoadSpatialAnchors(
-            string roomId,
-            string scenarioId,
-            string subfolder = "anchors");
-
-        void ClearRoomCache(string roomId, string subfolder = "anchors");
-
-        void ClearAllCaches(string subfolder = "anchors");
-
-        Dictionary<string, List<SAHAnchorSaveData>> LoadRoomCache(
-            string roomId,
-            string subfolder = "anchors");
-
-        List<SAHAnchorSaveData> LoadLayoutCache(
-            string roomId,
-            string scenarioId,
-            string subfolder = "anchors");
+            List<SAHAnchorSaveData> saveData);
     }
 }

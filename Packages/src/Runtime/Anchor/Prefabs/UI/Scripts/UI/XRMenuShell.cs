@@ -29,7 +29,6 @@ public sealed class XRMenuShell : MonoBehaviour
 
     public void Recenter()
     {
-        return;
         Camera camera = Camera.main;
         if (camera == null)
             return;

@@ -1,32 +1,81 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
-using Meta.XR.MRUtilityKit;
-using Newtonsoft.Json;
 using UnityEngine;
 
 namespace SAH
 {
     public sealed class MetaSpatialAnchorBackend : ISpatialAnchorBackend
     {
-        public IEnumerator FetchRoomIdCoroutine(
-            Action<string> onRoomIdFound)
-        {
-            while (true)
-            {
-                var room = MRUK.Instance?.GetCurrentRoom();
+        public bool IsTrackingReady => OVRPlugin.GetNodePositionTracked(OVRPlugin.Node.EyeCenter);
+        public bool SupportsPersistence => OVRManager.isHmdPresent;
 
-                if (room != null)
+        public async Task<Guid?> CreateSystemAnchor(Pose pose)
+        {
+            var instance = new GameObject("Layout System Anchor") { hideFlags = HideFlags.HideInHierarchy };
+            instance.transform.SetPositionAndRotation(pose.position, pose.rotation);
+
+            try
+            {
+                var anchor = instance.AddComponent<OVRSpatialAnchor>();
+                return await anchor.WhenCreatedAsync() ? await SaveAnchor(anchor) : null;
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(instance);
+            }
+        }
+
+        public async Task<Pose?> LocateSystemAnchor(Guid id, CancellationToken cancellationToken)
+        {
+            var anchors = new List<OVRAnchor>();
+            try
+            {
+                var result = await OVRAnchor.FetchAnchorsAsync(
+                    anchors, new OVRAnchor.FetchOptions { Uuids = new[] { id } });
+                if (!result.Success || anchors.Count == 0 || cancellationToken.IsCancellationRequested)
+                    return null;
+
+                OVRAnchor anchor = anchors[0];
+                if (!OVRSpatialAnchor.FromOVRAnchor(anchor, out var unbound)
+                    || !await unbound.LocalizeAsync(4)
+                    || !anchor.TryGetComponent<OVRLocatable>(out var locatable))
+                    return null;
+
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    string roomId = room.Anchor.Uuid.ToString();
-                    onRoomIdFound?.Invoke(roomId);
-                    yield break;
+                    if (locatable.TryGetSpatialAnchorPose(out var trackedPose)
+                        && trackedPose.IsPositionTracked && trackedPose.IsRotationTracked
+                        && unbound.TryGetPose(out Pose pose))
+                        return pose;
+
+                    await Task.Delay(100, cancellationToken);
                 }
 
-                yield return new WaitForSeconds(0.1f);
+                return null;
             }
+            finally
+            {
+                foreach (OVRAnchor anchor in anchors)
+                    anchor.Dispose();
+            }
+        }
+
+        public async Task<bool> EraseSystemAnchor(Guid id)
+        {
+            var result = await OVRAnchor.EraseAsync(Array.Empty<OVRAnchor>(), new[] { id });
+            return result.Success;
+        }
+
+        private static async Task<Guid?> SaveAnchor(OVRSpatialAnchor anchor)
+        {
+            var result = await anchor.SaveAnchorAsync();
+            if (result.Success)
+                return anchor.Uuid;
+
+            Debug.LogWarning($"Meta failed to save an anchor: {result.Status}");
+            return null;
         }
 
         public async Task<SAHAnchor> PlaceSpatialAnchor(
@@ -51,9 +100,10 @@ namespace SAH
             OVRSpatialAnchor nativeAnchor =
                 instance.AddComponent<OVRSpatialAnchor>();
 
-            while (!nativeAnchor.Created)
+            if (!await nativeAnchor.WhenCreatedAsync())
             {
-                await Task.Yield();
+                UnityEngine.Object.Destroy(instance);
+                return null;
             }
 
             return new SAHAnchor
@@ -82,82 +132,13 @@ namespace SAH
             Debug.Log("Cleared all spatial anchors.");
         }
 
-        public async Task SaveSpatialAnchors(List<SAHAnchor> anchors, string roomId, string scenarioId, string subfolder = "anchors")
+        public Task<Guid?> SaveSpatialAnchor(SAHAnchor anchor) =>
+            anchor.NativeHandle is OVRSpatialAnchor nativeAnchor && nativeAnchor != null
+                ? SaveAnchor(nativeAnchor)
+                : Task.FromResult<Guid?>(null);
+
+        public async Task<List<SAHAnchor>> LoadSpatialAnchors(List<SAHAnchorSaveData> saveDataList)
         {
-            // Construct the directory and file paths
-            string folderPath = Path.Combine(Application.persistentDataPath, subfolder);
-            string path = Path.Combine(folderPath, roomId);
-
-            // Ensure the directory exists
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-                Debug.Log($"Created directory: {folderPath}");
-            }
-
-            // Load existing JSON or create empty dictionary
-            Dictionary<string, List<SAHAnchorSaveData>> allScenarios = File.Exists(path)
-                ? JsonConvert.DeserializeObject<Dictionary<string, List<SAHAnchorSaveData>>>(File.ReadAllText(path))
-                : new Dictionary<string, List<SAHAnchorSaveData>>();
-
-            List<SAHAnchorSaveData> saveDataList = new List<SAHAnchorSaveData>();
-
-            foreach (SAHAnchor anchor in anchors)
-            {
-                if (!(anchor.NativeHandle is OVRSpatialAnchor nativeAnchor))
-                {
-                    Debug.LogWarning($"Anchor '{anchor.Id}' is not backed by an OVRSpatialAnchor.");
-                    continue;
-                }
-
-                var result = await nativeAnchor.SaveAnchorAsync();
-                if (result)
-                {
-                    anchor.Id = nativeAnchor.Uuid.ToString();
-                    saveDataList.Add(new SAHAnchorSaveData
-                    {
-                        anchorId = anchor.Id,
-                        prefabPath = anchor.PrefabPath,
-                        type = anchor.Type,
-                        scale = ToSAHVector3(
-                            anchor.Content != null
-                                ? anchor.Content.transform.localScale
-                                : Vector3.one)
-                    });
-
-                    Debug.Log($"Anchor {nativeAnchor.Uuid} saved successfully.");
-                }
-                else
-                {
-                    Debug.LogWarning("Failed to save anchor.");
-                }
-            }
-
-            allScenarios[scenarioId] = saveDataList;
-
-            string json = JsonConvert.SerializeObject(allScenarios, Formatting.Indented);
-            File.WriteAllText(path, json);
-            Debug.Log($"Saved {saveDataList.Count} anchors for scenario '{scenarioId}' to {path}");
-        }
-
-        public async Task<List<SAHAnchor>> LoadSpatialAnchors(string roomId, string scenarioId, string subfolder = "anchors")
-        {
-            string path = Path.Combine(Application.persistentDataPath, subfolder, roomId);
-            if (!File.Exists(path))
-            {
-                Debug.LogWarning($"Anchor file not found at {path}");
-                return null;
-            }
-
-            Dictionary<string, List<SAHAnchorSaveData>> allScenarios =
-                JsonConvert.DeserializeObject<Dictionary<string, List<SAHAnchorSaveData>>>(File.ReadAllText(path));
-
-            if (!allScenarios.TryGetValue(scenarioId, out var saveDataList))
-            {
-                Debug.LogWarning($"No anchors found for scenario '{scenarioId}'");
-                return null;
-            }
-
             List<Guid> anchorIds = new List<Guid>();
             Dictionary<Guid, SAHAnchorSaveData> idToData = new Dictionary<Guid, SAHAnchorSaveData>();
 
@@ -175,6 +156,9 @@ namespace SAH
             }
 
             List<OVRSpatialAnchor.UnboundAnchor> unboundAnchors = new List<OVRSpatialAnchor.UnboundAnchor>();
+            if (anchorIds.Count == 0)
+                return new List<SAHAnchor>();
+
             var result = await OVRSpatialAnchor.LoadUnboundAnchorsAsync(anchorIds, unboundAnchors);
 
             if (!result.Success)
@@ -243,110 +227,9 @@ namespace SAH
             return anchors;
         }
 
-        private static SAHVector3 ToSAHVector3(Vector3 value)
-        {
-            return new SAHVector3
-            {
-                x = value.x,
-                y = value.y,
-                z = value.z
-            };
-        }
-
         private static Vector3 ToUnityVector3(SAHVector3 value)
         {
             return new Vector3(value.x, value.y, value.z);
-        }
-
-        public void ClearRoomCache(string roomId, string subfolder = "anchors")
-        {
-            string path = Path.Combine(Application.persistentDataPath, subfolder, roomId);
-
-            try
-            {
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                    Debug.Log($"Deleted anchor cache for room '{roomId}' at {path}");
-                }
-                else
-                {
-                    Debug.LogWarning($"No cache file found for room '{roomId}' at {path}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to delete cache for room '{roomId}': {ex.Message}");
-            }
-        }
-
-        public void ClearAllCaches(string subfolder = "anchors")
-        {
-            string folderPath = Path.Combine(Application.persistentDataPath, subfolder);
-
-            try
-            {
-                if (Directory.Exists(folderPath))
-                {
-                    string[] files = Directory.GetFiles(folderPath);
-                    foreach (var file in files)
-                    {
-                        File.Delete(file);
-                    }
-
-                    Debug.Log($"Cleared all anchor cache files in '{folderPath}'");
-                }
-                else
-                {
-                    Debug.LogWarning($"No anchor cache folder found at '{folderPath}'");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to clear all caches: {ex.Message}");
-            }
-        }
-
-        public Dictionary<string, List<SAHAnchorSaveData>> LoadRoomCache(string roomId, string subfolder = "anchors")
-        {
-            string path = Path.Combine(Application.persistentDataPath, subfolder, roomId);
-
-            if (!File.Exists(path))
-            {
-                Debug.LogWarning($"Anchor file not found at {path}");
-                return null;
-            }
-
-            try
-            {
-                var allScenarios = JsonConvert.DeserializeObject<Dictionary<string, List<SAHAnchorSaveData>>>(File.ReadAllText(path));
-                Debug.Log($"Loaded room cache '{roomId}' with {allScenarios?.Count ?? 0} scenarios.");
-                return allScenarios ?? new Dictionary<string, List<SAHAnchorSaveData>>();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to parse anchor file at {path}: {ex.Message}");
-                return null;
-            }
-        }
-
-        public List<SAHAnchorSaveData> LoadLayoutCache(string roomId, string scenarioId, string subfolder = "anchors")
-        {
-            var allScenarios = LoadRoomCache(roomId, subfolder);
-
-            if (allScenarios == null)
-            {
-                return null;
-            }
-
-            if (!allScenarios.TryGetValue(scenarioId, out var saveDataList))
-            {
-                Debug.LogWarning($"No layout found for scenario '{scenarioId}' in room '{roomId}'");
-                return null;
-            }
-
-            Debug.Log($"Loaded layout '{scenarioId}' for room '{roomId}' with {saveDataList.Count} anchors.");
-            return saveDataList;
         }
     }
 }

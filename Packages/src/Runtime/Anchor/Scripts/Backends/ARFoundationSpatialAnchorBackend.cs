@@ -1,10 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using UnityEngine;
+using UnityEngine.XR;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -12,16 +11,106 @@ namespace SAH
 {
     public sealed class ARFoundationSpatialAnchorBackend : ISpatialAnchorBackend
     {
-        private const string CacheScopeId = "arfoundation";
-
         private ARAnchorManager _anchorManager;
         private readonly List<ARAnchor> _activeAnchors = new List<ARAnchor>();
 
-        public IEnumerator FetchRoomIdCoroutine(Action<string> onRoomIdFound)
+        public bool IsTrackingReady
         {
-            // AR Foundation has no provider-independent room identifier.
-            onRoomIdFound?.Invoke(CacheScopeId);
-            yield break;
+            get
+            {
+                if (!HasRunningManager())
+                    return false;
+
+                InputDevice head = InputDevices.GetDeviceAtXRNode(XRNode.Head);
+                return head.isValid
+                    ? head.TryGetFeatureValue(CommonUsages.isTracked, out bool tracked) && tracked
+                    : ARSession.state == ARSessionState.SessionTracking;
+            }
+        }
+
+        public bool SupportsPersistence => HasRunningManager()
+            && _anchorManager.descriptor.supportsSaveAnchor
+            && _anchorManager.descriptor.supportsLoadAnchor;
+
+        public async Task<Guid?> CreateSystemAnchor(Pose pose)
+        {
+            if (!SupportsPersistence)
+                return null;
+
+            var result = await _anchorManager.TryAddAnchorAsync(pose);
+            if (!result.status.IsSuccess())
+                return null;
+
+            ARAnchor anchor = result.value;
+            try
+            {
+                HideSystemAnchor(anchor);
+                return await SaveAnchor(anchor);
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(anchor.gameObject);
+            }
+        }
+
+        public async Task<Pose?> LocateSystemAnchor(Guid id, CancellationToken cancellationToken)
+        {
+            if (!SupportsPersistence)
+                return null;
+
+            var result = await _anchorManager.TryLoadAnchorAsync(new SerializableGuid(id), cancellationToken);
+            if (!result.status.IsSuccess())
+                return null;
+
+            ARAnchor anchor = result.value;
+            try
+            {
+                HideSystemAnchor(anchor);
+                while (anchor != null && !cancellationToken.IsCancellationRequested)
+                {
+                    if (anchor.trackingState == TrackingState.Tracking)
+                        return new Pose(anchor.transform.position, anchor.transform.rotation);
+
+                    await Task.Delay(100, cancellationToken);
+                }
+
+                return null;
+            }
+            finally
+            {
+                if (anchor != null)
+                    UnityEngine.Object.Destroy(anchor.gameObject);
+            }
+        }
+
+        public async Task<bool> EraseSystemAnchor(Guid id)
+        {
+            if (!HasRunningManager() || !_anchorManager.descriptor.supportsEraseAnchor)
+                return false;
+
+            var result = await _anchorManager.TryEraseAnchorAsync(new SerializableGuid(id));
+            return result.IsSuccess();
+        }
+
+        private static void HideSystemAnchor(ARAnchor anchor)
+        {
+            anchor.gameObject.hideFlags |= HideFlags.HideInHierarchy;
+            foreach (var renderer in anchor.GetComponentsInChildren<Renderer>(true))
+                renderer.enabled = false;
+            foreach (var collider in anchor.GetComponentsInChildren<Collider>(true))
+                collider.enabled = false;
+            foreach (var canvas in anchor.GetComponentsInChildren<Canvas>(true))
+                canvas.enabled = false;
+        }
+
+        private async Task<Guid?> SaveAnchor(ARAnchor anchor)
+        {
+            var result = await _anchorManager.TrySaveAnchorAsync(anchor);
+            if (result.status.IsSuccess())
+                return result.value.guid;
+
+            Debug.LogWarning($"AR Foundation failed to save an anchor: {result.status}");
+            return null;
         }
 
         public async Task<SAHAnchor> PlaceSpatialAnchor(
@@ -66,66 +155,19 @@ namespace SAH
             Debug.Log("Cleared all AR Foundation spatial anchors.");
         }
 
-        public async Task SaveSpatialAnchors(
-            List<SAHAnchor> anchors,
-            string roomId,
-            string scenarioId,
-            string subfolder = "anchors")
+        public Task<Guid?> SaveSpatialAnchor(SAHAnchor anchor)
         {
             EnsureManagerReady();
             EnsurePersistenceSupported(save: true);
-
-            var saveData = new List<SAHAnchorSaveData>();
-            foreach (SAHAnchor anchor in anchors)
-            {
-                if (!(anchor.NativeHandle is ARAnchor nativeAnchor))
-                {
-                    Debug.LogWarning(
-                        $"Anchor '{anchor.Id}' is not backed by an AR Foundation anchor.");
-                    continue;
-                }
-
-                var result = await _anchorManager.TrySaveAnchorAsync(nativeAnchor);
-                if (!result.status.IsSuccess())
-                {
-                    Debug.LogWarning(
-                        $"AR Foundation failed to save an anchor: {result.status}");
-                    continue;
-                }
-
-                anchor.Id = result.value.guid.ToString();
-                if (anchor.Content != null && anchor.Content.TryGetComponent(out SAHAnchorTag tag))
-                    tag.Initialize(anchor);
-
-                saveData.Add(new SAHAnchorSaveData
-                {
-                    anchorId = anchor.Id,
-                    prefabPath = anchor.PrefabPath,
-                    type = anchor.Type,
-                    scale = ToSAHVector3(
-                        anchor.Content != null
-                            ? anchor.Content.transform.localScale
-                            : Vector3.one)
-                });
-            }
-
-            SaveLayoutCache(roomId, scenarioId, saveData, subfolder);
+            return anchor.NativeHandle is ARAnchor nativeAnchor && nativeAnchor != null
+                ? SaveAnchor(nativeAnchor)
+                : Task.FromResult<Guid?>(null);
         }
 
-        public async Task<List<SAHAnchor>> LoadSpatialAnchors(
-            string roomId,
-            string scenarioId,
-            string subfolder = "anchors")
+        public async Task<List<SAHAnchor>> LoadSpatialAnchors(List<SAHAnchorSaveData> saveData)
         {
             EnsureManagerReady();
             EnsurePersistenceSupported(save: false);
-
-            List<SAHAnchorSaveData> saveData =
-                LoadLayoutCache(roomId, scenarioId, subfolder);
-            if (saveData == null)
-            {
-                return null;
-            }
 
             var anchors = new List<SAHAnchor>();
             foreach (SAHAnchorSaveData data in saveData)
@@ -169,79 +211,19 @@ namespace SAH
             return anchors;
         }
 
-        public void ClearRoomCache(string roomId, string subfolder = "anchors")
-        {
-            string path = GetCachePath(roomId, subfolder);
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-                Debug.Log($"Deleted AR Foundation anchor cache at '{path}'.");
-            }
-        }
-
-        public void ClearAllCaches(string subfolder = "anchors")
-        {
-            string folderPath = Path.Combine(Application.persistentDataPath, subfolder);
-            if (!Directory.Exists(folderPath))
-            {
-                return;
-            }
-
-            foreach (string file in Directory.GetFiles(folderPath))
-            {
-                File.Delete(file);
-            }
-        }
-
-        public Dictionary<string, List<SAHAnchorSaveData>> LoadRoomCache(
-            string roomId,
-            string subfolder = "anchors")
-        {
-            string path = GetCachePath(roomId, subfolder);
-            if (!File.Exists(path))
-            {
-                return null;
-            }
-
-            try
-            {
-                return JsonConvert.DeserializeObject<
-                           Dictionary<string, List<SAHAnchorSaveData>>>(
-                           File.ReadAllText(path))
-                       ?? new Dictionary<string, List<SAHAnchorSaveData>>();
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError($"Failed to load anchor cache '{path}': {exception.Message}");
-                return null;
-            }
-        }
-
-        public List<SAHAnchorSaveData> LoadLayoutCache(
-            string roomId,
-            string scenarioId,
-            string subfolder = "anchors")
-        {
-            Dictionary<string, List<SAHAnchorSaveData>> roomCache =
-                LoadRoomCache(roomId, subfolder);
-
-            return roomCache != null
-                   && roomCache.TryGetValue(scenarioId, out var layout)
-                ? layout
-                : null;
-        }
-
-        private void EnsureManagerReady()
+        private bool HasRunningManager()
         {
             if (_anchorManager == null)
                 _anchorManager = UnityEngine.Object.FindFirstObjectByType<ARAnchorManager>();
 
-            if (_anchorManager == null || !_anchorManager.isActiveAndEnabled
-                || _anchorManager.subsystem?.running != true)
-            {
-                throw new InvalidOperationException(
-                    "Add an enabled ARAnchorManager to the XR Origin and enable its anchor provider.");
-            }
+            return _anchorManager != null && _anchorManager.isActiveAndEnabled
+                && _anchorManager.subsystem?.running == true;
+        }
+
+        private void EnsureManagerReady()
+        {
+            if (!HasRunningManager())
+                throw new InvalidOperationException("Enable an ARAnchorManager and its anchor provider.");
         }
 
         private void EnsurePersistenceSupported(bool save)
@@ -276,39 +258,6 @@ namespace SAH
             }
 
             return content;
-        }
-
-        private static void SaveLayoutCache(
-            string roomId,
-            string scenarioId,
-            List<SAHAnchorSaveData> saveData,
-            string subfolder)
-        {
-            string folderPath = Path.Combine(Application.persistentDataPath, subfolder);
-            Directory.CreateDirectory(folderPath);
-            string path = GetCachePath(roomId, subfolder);
-
-            Dictionary<string, List<SAHAnchorSaveData>> roomCache = File.Exists(path)
-                ? JsonConvert.DeserializeObject<
-                      Dictionary<string, List<SAHAnchorSaveData>>>(
-                      File.ReadAllText(path))
-                  ?? new Dictionary<string, List<SAHAnchorSaveData>>()
-                : new Dictionary<string, List<SAHAnchorSaveData>>();
-
-            roomCache[scenarioId] = saveData;
-            File.WriteAllText(
-                path,
-                JsonConvert.SerializeObject(roomCache, Formatting.Indented));
-        }
-
-        private static string GetCachePath(string roomId, string subfolder)
-        {
-            return Path.Combine(Application.persistentDataPath, subfolder, roomId);
-        }
-
-        private static SAHVector3 ToSAHVector3(Vector3 value)
-        {
-            return new SAHVector3 { x = value.x, y = value.y, z = value.z };
         }
 
         private static Vector3 ToUnityVector3(SAHVector3 value)

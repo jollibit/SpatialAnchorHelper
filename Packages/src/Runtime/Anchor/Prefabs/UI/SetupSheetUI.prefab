@@ -1806,6 +1806,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   layoutID: 
+  saveButtonLabel: {fileID: 910000050}
   hoverMaterial: {fileID: 2100000, guid: 2382368b7b1c90843b16d9b83ff17d0f, type: 2}
   SetupObject: {fileID: 0}
   inputProvider: {fileID: 0}
@@ -2597,6 +2598,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1603536377081545420}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &910000050 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5070737097786578530, guid: ab75355f2918a1946b6910b7906004cc,
+    type: 3}
+  m_PrefabInstance: {fileID: 1603536377081545420}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!1001 &1695084069105198172
 PrefabInstance:
   m_ObjectHideFlags: 0

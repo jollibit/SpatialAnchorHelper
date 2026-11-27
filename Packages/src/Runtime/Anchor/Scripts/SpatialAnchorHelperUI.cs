@@ -23,15 +23,15 @@ namespace SAH
         private GameObject _ghostModel;
         private List<GameObject> _pendingSpatialAnchors = new List<GameObject>();
 
-        void Start()
+        protected override void Start()
         {
+            base.Start();
             _placementInput = inputProvider as ISpatialAnchorPlacementInput
                 ?? GetComponentInParent<ISpatialAnchorPlacementInput>();
             var menu = GetComponentInParent<MainMenuManager>();
             _setupObjectPrefab = menu != null && menu.SetupObjectPrefab != null
                 ? menu.SetupObjectPrefab
                 : SetupObject;
-            if (SpatialAnchorHelper.Instance != null) _spatialAnchorHelper = SpatialAnchorHelper.Instance;
         }
 
         void OnEnable()
