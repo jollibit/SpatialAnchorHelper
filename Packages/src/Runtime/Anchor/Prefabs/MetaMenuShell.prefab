@@ -4736,8 +4736,9 @@ GameObject:
   m_Component:
   - component: {fileID: 5332335873772447172}
   - component: {fileID: 7766627630812415111}
+  - component: {fileID: 7198915763917027840}
   m_Layer: 0
-  m_Name: MainMenu
+  m_Name: MetaMenuShell
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4776,6 +4777,20 @@ MonoBehaviour:
     prefab: {fileID: 9010532559974605481, guid: e812aceb73abce94d931ea227b65c898,
       type: 3}
   canvas: {fileID: 872786529763945194}
+  setupObjectPrefab: {fileID: 7406647740922620686, guid: c47ebc059410dce48a8ec29d59c98079,
+    type: 3}
+--- !u!114 &7198915763917027840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8536860890279034241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b363579cde1babd47b2ace0cdec24555, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SpatialAnchorHelper::SAH.MetaPlacementInput
 --- !u!1 &8552634216996480238
 GameObject:
   m_ObjectHideFlags: 0

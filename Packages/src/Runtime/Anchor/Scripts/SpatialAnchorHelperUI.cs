@@ -13,8 +13,9 @@ namespace SAH
         [SerializeField] GameObject SetupObject;
         [SerializeField] private MonoBehaviour inputProvider;
 
-        private ISpatialAnchorPlacementInput Input =>
-            inputProvider as ISpatialAnchorPlacementInput;
+        private ISpatialAnchorPlacementInput _placementInput;
+        private GameObject _setupObjectPrefab;
+        private int _placementStartFrame;
 
         private bool _isPlacing = false;
         private string _currentPrefabPath;
@@ -24,6 +25,12 @@ namespace SAH
 
         void Start()
         {
+            _placementInput = inputProvider as ISpatialAnchorPlacementInput
+                ?? GetComponentInParent<ISpatialAnchorPlacementInput>();
+            var menu = GetComponentInParent<MainMenuManager>();
+            _setupObjectPrefab = menu != null && menu.SetupObjectPrefab != null
+                ? menu.SetupObjectPrefab
+                : SetupObject;
             if (SpatialAnchorHelper.Instance != null) _spatialAnchorHelper = SpatialAnchorHelper.Instance;
         }
 
@@ -45,12 +52,12 @@ namespace SAH
             if (!_isPlacing)
                 return;
 
-            if (!Input.TryGetPose(out Pose pose))
+            if (!_placementInput.TryGetPose(out Pose pose))
                 return;
 
             SetupAndUpdateGhostModel(pose);
 
-            if (Input.WasConfirmedThisFrame())
+            if (Time.frameCount != _placementStartFrame && _placementInput.WasConfirmedThisFrame())
             {
                 PlaceSetupObject(pose);
                 _isPlacing = false;
@@ -59,10 +66,17 @@ namespace SAH
 
         public void PlaceAnchor(string prefabPath)
         {
+            if (_placementInput == null || _setupObjectPrefab == null)
+            {
+                Debug.LogWarning("The setup sheet requires placement input and a setup object prefab.", this);
+                return;
+            }
+
             if (prefabPath != null)
             {
                 _currentPrefabPath = prefabPath;
                 _isPlacing = true;
+                _placementStartFrame = Time.frameCount;
                 if (_ghostModel != null) Destroy(_ghostModel);
             }
         }
@@ -116,7 +130,7 @@ namespace SAH
             euler.z = 0;
             Quaternion rotation = Quaternion.Euler(euler);
 
-            GameObject setupGameObject = Instantiate(SetupObject, position, rotation);
+            GameObject setupGameObject = Instantiate(_setupObjectPrefab, position, rotation);
             _pendingSpatialAnchors.Add(setupGameObject);
 
             SetupObject setupObject = setupGameObject.GetComponent<SetupObject>();

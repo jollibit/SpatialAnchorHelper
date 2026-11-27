@@ -10,13 +10,17 @@ namespace SAH
 
         public bool TryGetPose(out Pose pose)
         {
+            pose = default;
+            if (rightHand == null || !rightHand.gameObject.activeInHierarchy)
+                return false;
+
             pose = new Pose(rightHand.position, rightHand.rotation);
-            return rightHand.gameObject.activeInHierarchy;
+            return true;
         }
 
         public bool WasConfirmedThisFrame()
         {
-            return selectAction.action.WasPressedThisFrame();
+            return selectAction != null && selectAction.action?.WasPressedThisFrame() == true;
         }
     }
 }

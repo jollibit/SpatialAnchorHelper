@@ -18,6 +18,9 @@ public class MainMenuManager : MonoBehaviour
 
     [SerializeField] private List<StateToPrefab> stateToPrefabList;
     [SerializeField] private GameObject canvas;
+    [SerializeField] private GameObject setupObjectPrefab;
+
+    internal GameObject SetupObjectPrefab => setupObjectPrefab;
     private Dictionary<string, GameObject> stateToPrefabDict = new Dictionary<string, GameObject>();
 
     private void Awake()
