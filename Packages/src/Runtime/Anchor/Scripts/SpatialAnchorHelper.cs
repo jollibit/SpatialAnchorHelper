@@ -146,8 +146,7 @@ namespace SAH
 
             if (matches.Count == 0)
             {
-                if (_layouts.Count > 0)
-                    Debug.LogWarning("No saved layout localized. Retry identification or explicitly create a new layout.");
+                await CreateLayoutFile();
                 return;
             }
 
@@ -157,7 +156,7 @@ namespace SAH
                 return;
             }
 
-            await ActivateLayout(_layouts[matches[0].id]);
+            SetCurrentLayout(_layouts[matches[0].id]);
         });
 
         public Task SelectLayoutAsync(Guid id) => RunLayoutOperation(async () =>
@@ -168,7 +167,10 @@ namespace SAH
             if ((await LocalizeLayouts(new[] { id })).Count == 0 || !_backend.IsTrackingReady)
                 return;
 
-            await ActivateLayout(layout);
+            if (_currentLayout != null && _currentLayout.Id != id)
+                ClearContent();
+
+            SetCurrentLayout(layout);
         });
 
         internal string DescribeLayout(Guid id) =>
@@ -359,23 +361,13 @@ namespace SAH
             return true;
         }
 
-        private async Task ActivateLayout(LayoutFile layout)
-        {
-            SetCurrentLayout(layout);
-            string layoutID = layout.LastLayout != null && layout.Content.ContainsKey(layout.LastLayout)
-                ? layout.LastLayout
-                : layout.Content.Keys.FirstOrDefault();
-            if (layoutID != null)
-                await LoadContent(layoutID);
-            else
-                ClearContent();
-        }
-
         private void SetCurrentLayout(LayoutFile layout)
         {
             _currentLayout = layout;
-            SelectedContentLayout = null;
-            Debug.Log($"Localized layout {layout.Id}");
+            SelectedContentLayout = layout.LastLayout != null && layout.Content.ContainsKey(layout.LastLayout)
+                ? layout.LastLayout
+                : layout.Content.Keys.FirstOrDefault();
+            Debug.Log($"Selected layout {layout.Id}");
             OnRoomIdFound?.Invoke();
         }
 

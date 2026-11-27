@@ -13,6 +13,7 @@ namespace SAH
 
     public class GizmoHandle : MonoBehaviour
     {
-
+        public virtual bool BeginGrab(Transform attachPoint) => false;
+        public virtual void OnRelease() { }
     }
 }

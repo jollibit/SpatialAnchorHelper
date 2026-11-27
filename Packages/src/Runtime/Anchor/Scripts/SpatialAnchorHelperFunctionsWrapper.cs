@@ -32,10 +32,11 @@ namespace SAH
 
         public async void LoadSpatialAnchors()
         {
+            if (!_spatialAnchorHelper.LayoutId.HasValue)
+                await _spatialAnchorHelper.IdentifyLayoutsAsync();
+
             if (_spatialAnchorHelper.LayoutId.HasValue)
                 await _spatialAnchorHelper.LoadSpatialAnchors(layoutID);
-            else
-                await _spatialAnchorHelper.IdentifyLayoutsAsync();
         }
 
         public async void SaveSpatialAnchors()

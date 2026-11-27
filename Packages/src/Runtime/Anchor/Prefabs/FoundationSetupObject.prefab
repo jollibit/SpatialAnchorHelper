@@ -12,23 +12,47 @@ PrefabInstance:
       propertyPath: m_Name
       value: FoundationSetupObject
       objectReference: {fileID: 0}
-    - target: {fileID: 2780811692182150438, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 2943723274844843136, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6807853800637053298, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9066334073775478161, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 9215852154297349356, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 399900816137654477, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 726911360331036779, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1264241915766646590, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1392500378153533474, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1744620231170918006, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4126672070876545169, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4278264365313169523, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5054568460864879614, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6616362133686639318, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
@@ -39,6 +63,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4783387325581750913, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
       insertIndex: -1
       addedObject: {fileID: 910000004}
+    - targetCorrespondingSourceObject: {fileID: 386558016729662252, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 910000006}
   m_SourcePrefab: {fileID: 100100000, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
 --- !u!1 &910000002 stripped
 GameObject:
@@ -69,3 +96,20 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RaycastTriggerInteraction: 1
+--- !u!1 &910000005 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 386558016729662252, guid: c47ebc059410dce48a8ec29d59c98079, type: 3}
+  m_PrefabInstance: {fileID: 910000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &910000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da3b18a06c1c4bd7aaf7614c210d0abd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: SAH.XRIGizmos::SAH.FoundationGizmoInput

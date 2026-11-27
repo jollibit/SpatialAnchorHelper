@@ -1,0 +1,15 @@
+{
+    "name": "SAH.XRIGizmos",
+    "references": [
+        "SpatialAnchorHelper",
+        "Unity.XR.Interaction.Toolkit"
+    ],
+    "defineConstraints": ["SAH_XRI_3_OR_NEWER"],
+    "versionDefines": [
+        {
+            "name": "com.unity.xr.interaction.toolkit",
+            "expression": "3.0.0",
+            "define": "SAH_XRI_3_OR_NEWER"
+        }
+    ]
+}

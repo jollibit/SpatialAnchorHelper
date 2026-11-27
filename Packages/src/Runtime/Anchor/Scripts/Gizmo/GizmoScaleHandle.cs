@@ -102,26 +102,22 @@ namespace SAH
         }
         public void OnGrab()
         {
-            if (gizmo == null)
-                return;
-
-            _isActive = gizmo.TryActivateHandle(this);
-
-            if (!_isActive)
-                return;
-
-            if (_handGrabInteractable == null)
-                return;
-
-            _io = _handGrabInteractable
-                .SelectingInteractors
-                .First()
-                .WristPoint;
-
-            lastHandPos = _io.position;
+            BeginGrab(_handGrabInteractable?.SelectingInteractors.FirstOrDefault()?.WristPoint);
         }
 
-        public void OnRelease()
+        public override bool BeginGrab(Transform attachPoint)
+        {
+            if (attachPoint == null || gizmo == null || gizmo.target == null
+                || !gizmo.TryActivateHandle(this))
+                return false;
+
+            _io = attachPoint;
+            lastHandPos = _io.position;
+            _isActive = true;
+            return true;
+        }
+
+        public override void OnRelease()
         {
             if (!_isActive)
                 return;
